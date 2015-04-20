@@ -212,6 +212,17 @@ public class SFTPClient {
     return fileList;
   }
 
+  public void get( FileObject localFile, String remoteFile ) throws KettleJobException {
+    try {
+      c.get( remoteFile, KettleVFS.getOutputStream( localFile, false ) );
+    } catch ( SftpException e ) {
+      throw new KettleJobException( e );
+    } catch ( IOException e ) {
+      throw new KettleJobException( e );
+    }
+  }
+
+  @Deprecated
   public void get( String localFilePath, String remoteFile ) throws KettleJobException {
     int mode = ChannelSftp.OVERWRITE;
     try {
