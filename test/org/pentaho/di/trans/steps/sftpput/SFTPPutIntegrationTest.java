@@ -24,21 +24,33 @@ package org.pentaho.di.trans.steps.sftpput;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.Session;
+
+import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.pentaho.di.TestUtilities;
 import org.pentaho.di.core.KettleEnvironment;
+import org.pentaho.di.core.RowMetaAndData;
+import org.pentaho.di.core.row.RowMeta;
+import org.pentaho.di.core.row.value.ValueMetaBinary;
+import org.pentaho.di.core.row.value.ValueMetaString;
 import org.pentaho.di.job.entries.sftp.SftpServer;
 import org.pentaho.di.trans.Trans;
+import org.pentaho.di.trans.TransMeta;
+import org.pentaho.di.trans.TransTestFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Andrey Khayrutdinov
@@ -132,5 +144,60 @@ public class SFTPPutIntegrationTest {
     channel.get( "uploaded.txt", os );
     String content = new String( os.toByteArray() );
     assertEquals( "qwerty", content );
+  }
+
+  @Test
+  public void putFileFromStream() throws Exception {
+
+    // Build a transformation
+    String stepName = "SFTP Put Test";
+    String inputFieldname = "My Binary Data";
+    String remoteFolderFieldname = "remote_folder";
+    String remoteFileFieldname = "remote_filename";
+    SFTPPutMeta stepMeta = new SFTPPutMeta();
+    stepMeta.setDefault();
+    stepMeta.setServerName( "localhost" );
+    stepMeta.setServerPort( String.valueOf( server.getPort() ) );
+    stepMeta.setUserName( server.getUsername() );
+    stepMeta.setPassword( server.getPassword() );
+    stepMeta.setInputStream( true );
+    stepMeta.setSourceFileFieldName( inputFieldname );
+    stepMeta.setCreateRemoteFolder( true );
+    stepMeta.setRemoteDirectoryFieldName( remoteFolderFieldname );
+    stepMeta.setRemoteFilenameFieldName( remoteFileFieldname );
+
+    TransMeta transMeta = TransTestFactory.generateTestTransformation( null, stepMeta, stepName );
+    
+    // Generate test data
+    byte[] rawData = new byte[20];
+    new Random().nextBytes( rawData );
+
+    List<RowMetaAndData> inputData = new ArrayList<RowMetaAndData>();
+    RowMeta rowMeta = new RowMeta();
+    rowMeta.addValueMeta( new ValueMetaString( remoteFolderFieldname ) );
+    rowMeta.addValueMeta( new ValueMetaString( remoteFileFieldname ) );
+    rowMeta.addValueMeta( new ValueMetaBinary( inputFieldname ) );
+    inputData.add( new RowMetaAndData( rowMeta, new Object[]{ "mydir", "result.bin", rawData } ) );
+
+    List<RowMetaAndData> resultRows =
+      TransTestFactory.executeTestTransformation( transMeta, TransTestFactory.INJECTOR_STEPNAME, stepName,
+        TransTestFactory.DUMMY_STEPNAME, inputData );
+
+    assertEquals( inputData, resultRows );
+
+    // Check File Results on Server
+    channel.connect();
+    channel.cd( "mydir" );
+    boolean foundRemoteFile = false;
+    for ( Object entry : channel.ls(  "." ) ) {
+      if ( entry instanceof ChannelSftp.LsEntry ) {
+        if ( ( (ChannelSftp.LsEntry) entry ).getFilename().equals( "result.bin" ) ) {
+          foundRemoteFile = true;
+        }
+      }
+    }
+    assertTrue( foundRemoteFile );
+    byte[] resultData = IOUtils.toByteArray( channel.get( "result.bin" ) );
+    assertArrayEquals( rawData, resultData );
   }
 }
