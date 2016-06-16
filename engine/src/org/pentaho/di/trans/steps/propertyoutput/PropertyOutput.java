@@ -23,7 +23,10 @@
 package org.pentaho.di.trans.steps.propertyoutput;
 
 import java.io.OutputStream;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.Properties;
+import java.util.TreeSet;
 
 import org.apache.commons.vfs2.FileObject;
 import org.pentaho.di.core.Const;
@@ -58,6 +61,7 @@ public class PropertyOutput extends BaseStep implements StepInterface {
     super( stepMeta, stepDataInterface, copyNr, transMeta, trans );
   }
 
+  @Override
   public boolean processRow( StepMetaInterface smi, StepDataInterface sdi ) throws KettleException {
     meta = (PropertyOutputMeta) smi;
     data = (PropertyOutputData) sdi;
@@ -187,9 +191,19 @@ public class PropertyOutput extends BaseStep implements StepInterface {
     data.previousFileName = data.filename;
   }
 
+  @SuppressWarnings( "serial" )
   private void openNewFile() throws KettleException {
     try {
-      data.pro = new Properties();
+      if ( meta.isSorted() ) {
+        data.pro = new Properties() {
+          @Override
+          public synchronized Enumeration<Object> keys() {
+            return Collections.enumeration(new TreeSet<Object>(super.keySet()));
+          }
+        };
+      } else {
+        data.pro = new Properties();
+      }
       data.KeySet.clear();
 
       data.file = KettleVFS.getFileObject( data.filename, getTransMeta() );
@@ -295,6 +309,7 @@ public class PropertyOutput extends BaseStep implements StepInterface {
     return meta.buildFilename( this, getCopy() );
   }
 
+  @Override
   public boolean init( StepMetaInterface smi, StepDataInterface sdi ) {
     meta = (PropertyOutputMeta) smi;
     data = (PropertyOutputData) sdi;
@@ -305,6 +320,7 @@ public class PropertyOutput extends BaseStep implements StepInterface {
     return false;
   }
 
+  @Override
   public void dispose( StepMetaInterface smi, StepDataInterface sdi ) {
     meta = (PropertyOutputMeta) smi;
     data = (PropertyOutputData) sdi;

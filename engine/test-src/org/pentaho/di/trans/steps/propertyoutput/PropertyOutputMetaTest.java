@@ -39,7 +39,7 @@ public class PropertyOutputMetaTest {
       // there are no getters/setters and it's a private variable. Also, it's not included in the dialog. So it is
       // always serialized/deserialized as "false" (N).
       // MB - 5/2016
-      "DateInFilename", "TimeInFilename", "CreateParentFolder", "AddToResult", "Append" );
+      "DateInFilename", "TimeInFilename", "CreateParentFolder", "AddToResult", "Append", "Sorted" );
 
     LoadSaveTester<PropertyOutputMeta> tester = new LoadSaveTester<PropertyOutputMeta>(
         PropertyOutputMeta.class, attributes );

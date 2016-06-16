@@ -102,6 +102,9 @@ public class PropertyOutputMeta extends BaseStepMeta implements StepMetaInterfac
   /** Flag append in file **/
   private boolean append;
 
+  /** Store properties in sorted order **/
+  private boolean sorted;
+
   @Override
   public void loadXML( Node stepnode, List<DatabaseMeta> databases, IMetaStore metaStore ) throws KettleXMLException {
     readData( stepnode );
@@ -362,6 +365,7 @@ public class PropertyOutputMeta extends BaseStepMeta implements StepMetaInterfac
       timeInFilename = "Y".equalsIgnoreCase( XMLHandler.getTagValue( stepnode, "file", "add_time" ) );
       addToResult = "Y".equalsIgnoreCase( XMLHandler.getTagValue( stepnode, "file", "AddToResult" ) );
       append = "Y".equalsIgnoreCase( XMLHandler.getTagValue( stepnode, "file", "append" ) );
+      sorted = "Y".equalsIgnoreCase( XMLHandler.getTagValue( stepnode, "file", "sorted" ) );
       fileName = XMLHandler.getTagValue( stepnode, "file", "name" );
       fileNameInField = "Y".equalsIgnoreCase( XMLHandler.getTagValue( stepnode, "fileNameInField" ) );
       fileNameField = XMLHandler.getTagValue( stepnode, "fileNameField" );
@@ -405,6 +409,7 @@ public class PropertyOutputMeta extends BaseStepMeta implements StepMetaInterfac
     retval.append( "      " + XMLHandler.addTagValue( "create_parent_folder", createparentfolder ) );
     retval.append( "    " + XMLHandler.addTagValue( "addtoresult", addToResult ) );
     retval.append( "    " + XMLHandler.addTagValue( "append", append ) );
+    retval.append( "    " + XMLHandler.addTagValue( "sorted", sorted ) );
     retval.append( "      </file>" + Const.CR );
 
     return retval.toString();
@@ -428,6 +433,7 @@ public class PropertyOutputMeta extends BaseStepMeta implements StepMetaInterfac
       createparentfolder = rep.getStepAttributeBoolean( id_step, "create_parent_folder" );
       addToResult = rep.getStepAttributeBoolean( id_step, "addtoresult" );
       append = rep.getStepAttributeBoolean( id_step, "append" );
+      sorted = rep.getStepAttributeBoolean( id_step, "sorted" );
       fileNameInField = rep.getStepAttributeBoolean( id_step, "fileNameInField" );
       fileNameField = rep.getStepAttributeString( id_step, "fileNameField" );
 
@@ -454,6 +460,7 @@ public class PropertyOutputMeta extends BaseStepMeta implements StepMetaInterfac
       rep.saveStepAttribute( id_transformation, id_step, "create_parent_folder", createparentfolder );
       rep.saveStepAttribute( id_transformation, id_step, "addtoresult", addToResult );
       rep.saveStepAttribute( id_transformation, id_step, "append", append );
+      rep.saveStepAttribute( id_transformation, id_step, "sorted", sorted );
       rep.saveStepAttribute( id_transformation, id_step, "fileNameInField", fileNameInField );
       rep.saveStepAttribute( id_transformation, id_step, "fileNameField", fileNameField );
     } catch ( Exception e ) {
@@ -628,6 +635,14 @@ public class PropertyOutputMeta extends BaseStepMeta implements StepMetaInterfac
     } catch ( Exception e ) {
       throw new KettleException( e );
     }
+  }
+
+  public boolean isSorted() {
+    return sorted;
+  }
+
+  public void setSorted( boolean sorted ) {
+    this.sorted = sorted;
   }
 
 }

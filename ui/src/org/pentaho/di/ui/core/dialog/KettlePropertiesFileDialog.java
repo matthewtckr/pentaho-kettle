@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.TreeSet;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ShellAdapter;
@@ -138,6 +139,7 @@ public class KettlePropertiesFileDialog extends Dialog {
           BaseMessages.getString( PKG, "KettlePropertiesFileDialog.Description.Label" ),
           ColumnInfo.COLUMN_TYPE_TEXT, false, true ), };
     colinf[2].setDisabledListener( new FieldDisabledListener() {
+      @Override
       public boolean isFieldDisabled( int rowNr ) {
         return false;
       }
@@ -167,11 +169,13 @@ public class KettlePropertiesFileDialog extends Dialog {
 
     // Add listeners
     lsOK = new Listener() {
+      @Override
       public void handleEvent( Event e ) {
         ok();
       }
     };
     lsCancel = new Listener() {
+      @Override
       public void handleEvent( Event e ) {
         cancel();
       }
@@ -182,6 +186,7 @@ public class KettlePropertiesFileDialog extends Dialog {
 
     // Detect X or ALT-F4 or something that kills this window...
     shell.addShellListener( new ShellAdapter() {
+      @Override
       public void shellClosed( ShellEvent e ) {
         cancel();
       }
@@ -272,7 +277,13 @@ public class KettlePropertiesFileDialog extends Dialog {
   }
 
   private void ok() {
-    Properties properties = new Properties();
+    @SuppressWarnings( "serial" )
+    Properties properties = new Properties() {
+      @Override
+      public synchronized Enumeration<Object> keys() {
+          return Collections.enumeration(new TreeSet<Object>(super.keySet()));
+      }
+    };
     kettleProperties = new HashMap<String, String>();
 
     int nr = wFields.nrNonEmpty();
@@ -293,7 +304,6 @@ public class KettlePropertiesFileDialog extends Dialog {
     FileOutputStream out = null;
     try {
       out = new FileOutputStream( getKettlePropertiesFilename() );
-      properties.store( out, Const.getKettlePropertiesFileHeader() );
     } catch ( Exception e ) {
       new ErrorDialog( shell,
         BaseMessages.getString( PKG, "KettlePropertiesFileDialog.Exception.ErrorSavingData.Title" ),
