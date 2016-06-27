@@ -22,6 +22,7 @@
 
 package org.pentaho.di.trans.steps.excelinput;
 
+import java.io.InputStream;
 import java.util.Date;
 
 import org.apache.commons.vfs2.FileObject;
@@ -77,6 +78,8 @@ public class ExcelInputData extends BaseStepData implements StepDataInterface {
    * The openFile that's being processed...
    */
   public KWorkbook workbook;
+
+  public InputStream workbookInputStream;
 
   /**
    * The sheet number that's being processed...

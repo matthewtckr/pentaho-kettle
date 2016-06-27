@@ -22,6 +22,7 @@
 
 package org.pentaho.di.trans.steps.excelinput;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -353,6 +354,7 @@ public class ExcelInput extends BaseStep implements StepInterface {
     }
   }
 
+  @Override
   public boolean processRow( StepMetaInterface smi, StepDataInterface sdi ) throws KettleException {
     meta = (ExcelInputMeta) smi;
     data = (ExcelInputData) sdi;
@@ -549,7 +551,9 @@ public class ExcelInput extends BaseStep implements StepInterface {
             + data.filenr + " : " + data.filename ) );
         }
 
-        data.workbook = WorkbookFactory.getWorkbook( meta.getSpreadSheetType(), data.filename, meta.getEncoding() );
+        data.workbookInputStream = data.file.getContent().getInputStream();
+        data.workbook =
+          WorkbookFactory.getWorkbook( meta.getSpreadSheetType(), data.workbookInputStream, meta.getEncoding() );
 
         data.errorHandler.handleFile( data.file );
         // Start at the first sheet again...
@@ -696,6 +700,12 @@ public class ExcelInput extends BaseStep implements StepInterface {
     data.previousRow = null;
 
     // Close the openFile!
+    try {
+      data.workbookInputStream.close();
+    } catch ( IOException ignored ) {
+      // Do nothing
+    }
+    data.workbookInputStream = null;
     data.workbook.close();
     data.workbook = null; // marker to open again.
     data.errorHandler.close();
@@ -734,6 +744,7 @@ public class ExcelInput extends BaseStep implements StepInterface {
     }
   }
 
+  @Override
   public boolean init( StepMetaInterface smi, StepDataInterface sdi ) {
     meta = (ExcelInputMeta) smi;
     data = (ExcelInputData) sdi;
@@ -797,10 +808,18 @@ public class ExcelInput extends BaseStep implements StepInterface {
     return false;
   }
 
+  @Override
   public void dispose( StepMetaInterface smi, StepDataInterface sdi ) {
     meta = (ExcelInputMeta) smi;
     data = (ExcelInputData) sdi;
 
+    if ( data.workbookInputStream != null ) {
+      try {
+        data.workbookInputStream.close();
+      } catch ( IOException ignored ) {
+        // Do nothing
+      }
+    }
     if ( data.workbook != null ) {
       data.workbook.close();
     }
