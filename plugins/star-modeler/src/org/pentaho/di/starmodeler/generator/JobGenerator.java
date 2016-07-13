@@ -29,8 +29,10 @@ import java.util.List;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.database.Database;
 import org.pentaho.di.core.database.DatabaseMeta;
+import org.pentaho.di.core.database.SqlScriptParser;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.gui.Point;
+import org.pentaho.di.core.logging.LogTablePluginInterface.TableType;
 import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMeta;
@@ -40,6 +42,7 @@ import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.job.JobHopMeta;
 import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.job.entries.sql.JobEntrySQL;
+import org.pentaho.di.job.entries.sql.JobEntrySQL.SQLScript;
 import org.pentaho.di.job.entry.JobEntryCopy;
 import org.pentaho.di.repository.Repository;
 import org.pentaho.di.repository.RepositoryDirectoryInterface;
@@ -56,12 +59,6 @@ import org.pentaho.di.trans.steps.dimensionlookup.DimensionLookupMeta;
 import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
 import org.pentaho.di.trans.steps.tableoutput.TableOutputMeta;
 import org.pentaho.di.ui.spoon.Spoon;
-import org.pentaho.metadata.model.Domain;
-import org.pentaho.metadata.model.LogicalColumn;
-import org.pentaho.metadata.model.LogicalModel;
-import org.pentaho.metadata.model.LogicalTable;
-import org.pentaho.metadata.model.concept.types.DataType;
-import org.pentaho.metadata.model.concept.types.TableType;
 
 /**
  * The job generator creates a template job based on a star domain.
@@ -226,7 +223,13 @@ public class JobGenerator {
 
         // If it's
 
-        sqlEntry.setSQL(sql);
+        List<SQLScript> sqlScripts = new ArrayList<SQLScript>();
+        for ( String statement : SqlScriptParser.getInstance().split( sql ) ) {
+          SQLScript script = new SQLScript();
+          script.setSqlScript( statement );
+          sqlScripts.add( script );
+        }
+        sqlEntry.setSqlScripts( sqlScripts );
 
         sqlEntry.setDescription("Generated based on logical table '"+tableName+"'"+Const.CR+Const.CR+Const.NVL(tableDescription, ""));
 

@@ -41,6 +41,7 @@ import org.pentaho.di.core.Const;
 import org.pentaho.di.core.NotePadMeta;
 import org.pentaho.di.core.ObjectLocationSpecificationMethod;
 import org.pentaho.di.core.database.DatabaseMeta;
+import org.pentaho.di.core.database.SqlScriptParser;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.di.core.extension.ExtensionPointHandler;
@@ -60,6 +61,7 @@ import org.pentaho.di.job.JobHopMeta;
 import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.job.entries.special.JobEntrySpecial;
 import org.pentaho.di.job.entries.sql.JobEntrySQL;
+import org.pentaho.di.job.entries.sql.JobEntrySQL.SQLScript;
 import org.pentaho.di.job.entries.trans.JobEntryTrans;
 import org.pentaho.di.job.entry.JobEntryCopy;
 import org.pentaho.di.job.entry.JobEntryDialogInterface;
@@ -506,6 +508,7 @@ public class SpoonJobDelegate extends SpoonDelegate {
     final RipDatabaseWizardPage3 page3 = new RipDatabaseWizardPage3( "3", spoon.getRepository() );
 
     Wizard wizard = new Wizard() {
+      @Override
       public boolean performFinish() {
         try {
           JobMeta jobMeta =
@@ -532,6 +535,7 @@ public class SpoonJobDelegate extends SpoonDelegate {
       /**
        * @see org.eclipse.jface.wizard.Wizard#canFinish()
        */
+      @Override
       public boolean canFinish() {
         return page3.canFinish();
       }
@@ -581,6 +585,7 @@ public class SpoonJobDelegate extends SpoonDelegate {
 
     // Create a dialog with a progress indicator!
     IRunnableWithProgress op = new IRunnableWithProgress() {
+      @Override
       public void run( IProgressMonitor monitor ) throws InvocationTargetException, InterruptedException {
         try {
           // This is running in a new process: copy some KettleVariables
@@ -727,7 +732,13 @@ public class SpoonJobDelegate extends SpoonDelegate {
               String jesqlname = BaseMessages.getString( PKG, "Spoon.RipDB.JobEntrySQL.Name" ) + tables[i] + "]";
               JobEntrySQL jesql = new JobEntrySQL( jesqlname );
               jesql.setDatabase( targetDbInfo );
-              jesql.setSQL( sql );
+              List<SQLScript> sqlScripts = new ArrayList<SQLScript>();
+              for ( String statement : SqlScriptParser.getInstance().split( sql ) ) {
+                SQLScript script = new SQLScript();
+                script.setSqlScript( statement );
+                sqlScripts.add( script );
+              }
+              jesql.setSqlScripts( sqlScripts );
               jesql
                 .setDescription( BaseMessages.getString( PKG, "Spoon.RipDB.JobEntrySQL.Description" )
                   + targetDbInfo + "].[" + tables[i] + "]" );

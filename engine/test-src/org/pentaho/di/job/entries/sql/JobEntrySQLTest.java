@@ -23,10 +23,16 @@
 package org.pentaho.di.job.entries.sql;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
 
+import org.pentaho.di.job.entries.sql.JobEntrySQL.SQLScript;
 import org.pentaho.di.job.entry.loadSave.JobEntryLoadSaveTestSupport;
+import org.pentaho.di.trans.steps.loadsave.validator.FieldLoadSaveValidator;
+import org.pentaho.di.trans.steps.loadsave.validator.ListLoadSaveValidator;
 
 public class JobEntrySQLTest extends JobEntryLoadSaveTestSupport<JobEntrySQL> {
 
@@ -37,35 +43,43 @@ public class JobEntrySQLTest extends JobEntryLoadSaveTestSupport<JobEntrySQL> {
 
   @Override
   protected List<String> listCommonAttributes() {
-    return Arrays.asList(
-        "sql",
-        "useVariableSubstitution",
-        "sqlfromfile",
-        "sqlfilename",
-        "sendOneStatement",
-        "database" );
+    return Arrays.asList( "Database", "SqlScripts" );
   }
 
   @Override
-  protected Map<String, String> createGettersMap() {
-    return toMap(
-        "sql", "getSQL",
-        "useVariableSubstitution", "getUseVariableSubstitution",
-        "sqlfromfile", "getSQLFromFile",
-        "sqlfilename", "getSQLFilename",
-        "sendOneStatement", "isSendOneStatement",
-        "database", "getDatabase" );
+  protected Map<String, FieldLoadSaveValidator<?>> createAttributeValidatorsMap() {
+    Map<String, FieldLoadSaveValidator<?>> attrMap = new HashMap<>();
+    attrMap.put( "SqlScripts",
+      new ListLoadSaveValidator<SQLScript>( new SQLScriptFieldLoadSaveValidator(),
+        new Random().nextInt( 5 ) ) );
+    return attrMap;
   }
 
-  @Override
-  protected Map<String, String> createSettersMap() {
-    return toMap(
-        "sql", "setSQL",
-        "useVariableSubstitution", "setUseVariableSubstitution",
-        "sqlfromfile", "setSQLFromFile",
-        "sqlfilename", "setSQLFilename",
-        "sendOneStatement", "setSendOneStatement",
-        "database", "setDatabase" );
-  }
+  static class SQLScriptFieldLoadSaveValidator implements FieldLoadSaveValidator<SQLScript> {
+    static final Random rand = new Random();
 
+    @Override
+    public SQLScript getTestObject() {
+      SQLScript object = new SQLScript();
+      object.setSqlScript( UUID.randomUUID().toString() );
+      object.setComments( UUID.randomUUID().toString() );
+      object.setUseVariableSubstitution( rand.nextBoolean() );
+      object.setReadFromFile( rand.nextBoolean() );
+      object.setSplitScriptInFile( rand.nextBoolean() );
+      return object;
+    }
+
+    @Override
+    public boolean validateTestObject( SQLScript testObject, Object actual ) {
+      if ( !( actual instanceof SQLScript ) ) {
+        return false;
+      }
+      SQLScript actualScript = (SQLScript) actual;
+      return testObject.getSqlScript().equals( actualScript.getSqlScript() )
+        && testObject.getComments().equals( actualScript.getComments() )
+        && testObject.isReadFromFile() == actualScript.isReadFromFile()
+        && testObject.isSplitScriptInFile() == actualScript.isSplitScriptInFile()
+        && testObject.isUseVariableSubstitution() == actualScript.isUseVariableSubstitution();
+    }
+  }
 }

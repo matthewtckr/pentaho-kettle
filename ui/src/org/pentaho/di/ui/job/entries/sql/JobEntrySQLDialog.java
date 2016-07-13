@@ -22,16 +22,13 @@
 
 package org.pentaho.di.ui.job.entries.sql;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CCombo;
-import org.eclipse.swt.events.FocusAdapter;
-import org.eclipse.swt.events.FocusEvent;
-import org.eclipse.swt.events.KeyAdapter;
-import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.MouseAdapter;
-import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.ShellAdapter;
@@ -42,14 +39,13 @@ import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.pentaho.di.core.Const;
-import org.pentaho.di.core.Props;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.job.JobMeta;
@@ -58,12 +54,11 @@ import org.pentaho.di.job.entry.JobEntryDialogInterface;
 import org.pentaho.di.job.entry.JobEntryInterface;
 import org.pentaho.di.repository.Repository;
 import org.pentaho.di.ui.core.gui.WindowProperty;
-import org.pentaho.di.ui.core.widget.StyledTextComp;
-import org.pentaho.di.ui.core.widget.TextVar;
+import org.pentaho.di.ui.core.widget.ColumnInfo;
+import org.pentaho.di.ui.core.widget.TableView;
 import org.pentaho.di.ui.job.dialog.JobDialog;
 import org.pentaho.di.ui.job.entry.JobEntryDialog;
 import org.pentaho.di.ui.trans.step.BaseStepDialog;
-import org.pentaho.di.ui.trans.steps.tableinput.SQLValuesHighlight;
 
 /**
  * This dialog allows you to edit the SQL job entry settings. (select the connection and the sql script to be executed)
@@ -78,6 +73,9 @@ public class JobEntrySQLDialog extends JobEntryDialog implements JobEntryDialogI
     BaseMessages.getString( PKG, "JobSQL.Filetype.Sql" ), BaseMessages.getString( PKG, "JobSQL.Filetype.Text" ),
     BaseMessages.getString( PKG, "JobSQL.Filetype.All" ) };
 
+  private static final String[] yesNoOptions = new String[]{ BaseMessages.getString( "System.Button.Yes" ),
+    BaseMessages.getString( "System.Button.No" ) };
+
   private Label wlName;
 
   private Text wName;
@@ -86,27 +84,8 @@ public class JobEntrySQLDialog extends JobEntryDialog implements JobEntryDialogI
 
   private CCombo wConnection;
 
-  private Label wlUseSubs;
-
-  private Button wUseSubs;
-
-  private Button wSQLFromFile;
-
-  private Label wlSQLFromFile;
-
-  private FormData fdlUseSubs, fdUseSubs;
-
-  private FormData fdlSQLFromFile, fdSQLFromFile;
-
-  private Label wlSQL;
-
-  private StyledTextComp wSQL;
-
-  private FormData fdlSQL, fdSQL;
-
-  private Label wlPosition;
-
-  private FormData fdlPosition;
+  private Label wlFields;
+  private TableView wFields;
 
   private Button wOK, wCancel;
 
@@ -120,18 +99,6 @@ public class JobEntrySQLDialog extends JobEntryDialog implements JobEntryDialogI
 
   private boolean changed;
 
-  private Label wlUseOneStatement;
-
-  private Button wSendOneStatement;
-
-  private FormData fdlUseOneStatement, fdUseOneStatement;
-
-  // File
-  private Label wlFilename;
-  private Button wbFilename;
-  private TextVar wFilename;
-  private FormData fdlFilename, fdbFilename, fdFilename;
-
   public JobEntrySQLDialog( Shell parent, JobEntryInterface jobEntryInt, Repository rep, JobMeta jobMeta ) {
     super( parent, jobEntryInt, rep, jobMeta );
     jobEntry = (JobEntrySQL) jobEntryInt;
@@ -140,6 +107,7 @@ public class JobEntrySQLDialog extends JobEntryDialog implements JobEntryDialogI
     }
   }
 
+  @Override
   public JobEntryInterface open() {
     Shell parent = getParent();
     Display display = parent.getDisplay();
@@ -149,6 +117,7 @@ public class JobEntrySQLDialog extends JobEntryDialog implements JobEntryDialogI
     JobDialog.setShellImage( shell, jobEntry );
 
     ModifyListener lsMod = new ModifyListener() {
+      @Override
       public void modifyText( ModifyEvent e ) {
         jobEntry.setChanged();
       }
@@ -172,7 +141,7 @@ public class JobEntrySQLDialog extends JobEntryDialog implements JobEntryDialogI
 
     BaseStepDialog.positionBottomButtons( shell, new Button[] { wOK, wCancel }, margin, null );
 
-    // Filename line
+    // JobEntry Name line
     wlName = new Label( shell, SWT.RIGHT );
     wlName.setText( BaseMessages.getString( PKG, "JobSQL.Name.Label" ) );
     props.setLook( wlName );
@@ -197,162 +166,48 @@ public class JobEntrySQLDialog extends JobEntryDialog implements JobEntryDialogI
     }
     wConnection.addModifyListener( lsMod );
 
-    // SQL from file?
-    wlSQLFromFile = new Label( shell, SWT.RIGHT );
-    wlSQLFromFile.setText( BaseMessages.getString( PKG, "JobSQL.SQLFromFile.Label" ) );
-    props.setLook( wlSQLFromFile );
-    fdlSQLFromFile = new FormData();
-    fdlSQLFromFile.left = new FormAttachment( 0, 0 );
-    fdlSQLFromFile.top = new FormAttachment( wConnection, 2 * margin );
-    fdlSQLFromFile.right = new FormAttachment( middle, -margin );
-    wlSQLFromFile.setLayoutData( fdlSQLFromFile );
-    wSQLFromFile = new Button( shell, SWT.CHECK );
-    props.setLook( wSQLFromFile );
-    wSQLFromFile.setToolTipText( BaseMessages.getString( PKG, "JobSQL.SQLFromFile.Tooltip" ) );
-    fdSQLFromFile = new FormData();
-    fdSQLFromFile.left = new FormAttachment( middle, 0 );
-    fdSQLFromFile.top = new FormAttachment( wConnection, 2 * margin );
-    fdSQLFromFile.right = new FormAttachment( 100, 0 );
-    wSQLFromFile.setLayoutData( fdSQLFromFile );
-    wSQLFromFile.addSelectionListener( new SelectionAdapter() {
-      public void widgetSelected( SelectionEvent e ) {
-        activeSQLFromFile();
-        jobEntry.setChanged();
-      }
-    } );
+    wlFields = new Label( shell, SWT.NONE );
+    wlFields.setText( BaseMessages.getString( PKG, "JobEntrySQLDialog.Fields.Label" ) );
+    props.setLook( wlFields );
+    FormData fdlFields = new FormData();
+    fdlFields.left = new FormAttachment( 0, 0 );
+    fdlFields.top = new FormAttachment( wConnection, margin );
+    wlFields.setLayoutData( fdlFields );
 
-    // Filename line
-    wlFilename = new Label( shell, SWT.RIGHT );
-    wlFilename.setText( BaseMessages.getString( PKG, "JobSQL.Filename.Label" ) );
-    props.setLook( wlFilename );
-    fdlFilename = new FormData();
-    fdlFilename.left = new FormAttachment( 0, 0 );
-    fdlFilename.top = new FormAttachment( wSQLFromFile, margin );
-    fdlFilename.right = new FormAttachment( middle, -margin );
-    wlFilename.setLayoutData( fdlFilename );
+    final int fieldsRows = jobEntry.getSqlScripts() != null ? jobEntry.getSqlScripts().size() : 1;
 
-    wbFilename = new Button( shell, SWT.PUSH | SWT.CENTER );
-    props.setLook( wbFilename );
-    wbFilename.setText( BaseMessages.getString( PKG, "System.Button.Browse" ) );
-    fdbFilename = new FormData();
-    fdbFilename.right = new FormAttachment( 100, 0 );
-    fdbFilename.top = new FormAttachment( wSQLFromFile, margin );
-    wbFilename.setLayoutData( fdbFilename );
+    ColumnInfo[] colinf = new ColumnInfo[] {
+      new ColumnInfo(
+        BaseMessages.getString( PKG, "JobEntrySQLDialog.SqlScript.Column" ), ColumnInfo.COLUMN_TYPE_TEXT, false ),
+      new ColumnInfo(
+        BaseMessages.getString( PKG, "JobEntrySQLDialog.Comment.Column" ), ColumnInfo.COLUMN_TYPE_TEXT, false ),
+      new ColumnInfo(
+        BaseMessages.getString( PKG, "JobEntrySQLDialog.ReadFromFile.Column" ), ColumnInfo.COLUMN_TYPE_CCOMBO,
+        yesNoOptions ),
+      new ColumnInfo(
+        BaseMessages.getString( PKG, "JobEntrySQLDialog.Variables.Column" ), ColumnInfo.COLUMN_TYPE_CCOMBO,
+        yesNoOptions ), };
 
-    wFilename = new TextVar( jobMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
-    props.setLook( wFilename );
-    wFilename.setToolTipText( BaseMessages.getString( PKG, "JobSQL.Filename.Tooltip" ) );
-    wFilename.addModifyListener( lsMod );
-    fdFilename = new FormData();
-    fdFilename.left = new FormAttachment( middle, 0 );
-    fdFilename.top = new FormAttachment( wSQLFromFile, margin );
-    fdFilename.right = new FormAttachment( wbFilename, -margin );
-    wFilename.setLayoutData( fdFilename );
+    wFields =
+      new TableView(
+        jobEntry, shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, colinf, fieldsRows, lsMod, props );
 
-    // Whenever something changes, set the tooltip to the expanded version:
-    wFilename.addModifyListener( new ModifyListener() {
-      public void modifyText( ModifyEvent e ) {
-        wFilename.setToolTipText( jobMeta.environmentSubstitute( wFilename.getText() ) );
-      }
-    } );
-
-    wbFilename.addSelectionListener( new SelectionAdapter() {
-      public void widgetSelected( SelectionEvent e ) {
-        FileDialog dialog = new FileDialog( shell, SWT.OPEN );
-        dialog.setFilterExtensions( new String[] { "*.sql", "*.txt", "*" } );
-        if ( wFilename.getText() != null ) {
-          dialog.setFileName( jobMeta.environmentSubstitute( wFilename.getText() ) );
-        }
-        dialog.setFilterNames( FILETYPES );
-        if ( dialog.open() != null ) {
-          wFilename.setText( dialog.getFilterPath() + Const.FILE_SEPARATOR + dialog.getFileName() );
-        }
-      }
-    } );
-
-    // Send one SQL Statement?
-    wlUseOneStatement = new Label( shell, SWT.RIGHT );
-    wlUseOneStatement.setText( BaseMessages.getString( PKG, "JobSQL.SendOneStatement.Label" ) );
-    props.setLook( wlUseOneStatement );
-    fdlUseOneStatement = new FormData();
-    fdlUseOneStatement.left = new FormAttachment( 0, 0 );
-    fdlUseOneStatement.top = new FormAttachment( wbFilename, margin );
-    fdlUseOneStatement.right = new FormAttachment( middle, -margin );
-    wlUseOneStatement.setLayoutData( fdlUseOneStatement );
-    wSendOneStatement = new Button( shell, SWT.CHECK );
-    props.setLook( wSendOneStatement );
-    wSendOneStatement.setToolTipText( BaseMessages.getString( PKG, "JobSQL.SendOneStatement.Tooltip" ) );
-    fdUseOneStatement = new FormData();
-    fdUseOneStatement.left = new FormAttachment( middle, 0 );
-    fdUseOneStatement.top = new FormAttachment( wbFilename, margin );
-    fdUseOneStatement.right = new FormAttachment( 100, 0 );
-    wSendOneStatement.setLayoutData( fdUseOneStatement );
-    wSendOneStatement.addSelectionListener( new SelectionAdapter() {
-      public void widgetSelected( SelectionEvent e ) {
-        jobEntry.setChanged();
-      }
-    } );
-
-    // Use variable substitution?
-    wlUseSubs = new Label( shell, SWT.RIGHT );
-    wlUseSubs.setText( BaseMessages.getString( PKG, "JobSQL.UseVariableSubst.Label" ) );
-    props.setLook( wlUseSubs );
-    fdlUseSubs = new FormData();
-    fdlUseSubs.left = new FormAttachment( 0, 0 );
-    fdlUseSubs.top = new FormAttachment( wSendOneStatement, margin );
-    fdlUseSubs.right = new FormAttachment( middle, -margin );
-    wlUseSubs.setLayoutData( fdlUseSubs );
-    wUseSubs = new Button( shell, SWT.CHECK );
-    props.setLook( wUseSubs );
-    wUseSubs.setToolTipText( BaseMessages.getString( PKG, "JobSQL.UseVariableSubst.Tooltip" ) );
-    fdUseSubs = new FormData();
-    fdUseSubs.left = new FormAttachment( middle, 0 );
-    fdUseSubs.top = new FormAttachment( wSendOneStatement, margin );
-    fdUseSubs.right = new FormAttachment( 100, 0 );
-    wUseSubs.setLayoutData( fdUseSubs );
-    wUseSubs.addSelectionListener( new SelectionAdapter() {
-      public void widgetSelected( SelectionEvent e ) {
-        jobEntry.setUseVariableSubstitution( !jobEntry.getUseVariableSubstitution() );
-        jobEntry.setChanged();
-      }
-    } );
-
-    wlPosition = new Label( shell, SWT.NONE );
-    wlPosition.setText( BaseMessages.getString( PKG, "JobSQL.LineNr.Label", "0" ) );
-    props.setLook( wlPosition );
-    fdlPosition = new FormData();
-    fdlPosition.left = new FormAttachment( 0, 0 );
-    fdlPosition.right = new FormAttachment( 100, 0 );
-    fdlPosition.bottom = new FormAttachment( wOK, -margin );
-    wlPosition.setLayoutData( fdlPosition );
-
-    // Script line
-    wlSQL = new Label( shell, SWT.NONE );
-    wlSQL.setText( BaseMessages.getString( PKG, "JobSQL.Script.Label" ) );
-    props.setLook( wlSQL );
-    fdlSQL = new FormData();
-    fdlSQL.left = new FormAttachment( 0, 0 );
-    fdlSQL.top = new FormAttachment( wUseSubs, margin );
-    wlSQL.setLayoutData( fdlSQL );
-
-    wSQL =
-      new StyledTextComp( jobEntry, shell, SWT.MULTI | SWT.LEFT | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL, "" );
-    props.setLook( wSQL, Props.WIDGET_STYLE_FIXED );
-    wSQL.addModifyListener( lsMod );
-    fdSQL = new FormData();
-    fdSQL.left = new FormAttachment( 0, 0 );
-    fdSQL.top = new FormAttachment( wlSQL, margin );
-    fdSQL.right = new FormAttachment( 100, -10 );
-    fdSQL.bottom = new FormAttachment( wlPosition, -margin );
-    wSQL.setLayoutData( fdSQL );
+    FormData fdFields = new FormData();
+    fdFields.left = new FormAttachment( 0, 0 );
+    fdFields.top = new FormAttachment( wlFields, margin );
+    fdFields.right = new FormAttachment( 100, 0 );
+    fdFields.bottom = new FormAttachment( 100, -50 );
+    wFields.setLayoutData( fdFields );
 
     // Add listeners
     lsCancel = new Listener() {
+      @Override
       public void handleEvent( Event e ) {
         cancel();
       }
     };
     lsOK = new Listener() {
+      @Override
       public void handleEvent( Event e ) {
         ok();
       }
@@ -362,6 +217,7 @@ public class JobEntrySQLDialog extends JobEntryDialog implements JobEntryDialogI
     wOK.addListener( SWT.Selection, lsOK );
 
     lsDef = new SelectionAdapter() {
+      @Override
       public void widgetDefaultSelected( SelectionEvent e ) {
         ok();
       }
@@ -371,56 +227,13 @@ public class JobEntrySQLDialog extends JobEntryDialog implements JobEntryDialogI
 
     // Detect X or ALT-F4 or something that kills this window...
     shell.addShellListener( new ShellAdapter() {
+      @Override
       public void shellClosed( ShellEvent e ) {
         cancel();
       }
     } );
 
-    wSQL.addModifyListener( new ModifyListener() {
-      public void modifyText( ModifyEvent arg0 ) {
-        setPosition();
-      }
-
-    } );
-
-    wSQL.addKeyListener( new KeyAdapter() {
-      public void keyPressed( KeyEvent e ) {
-        setPosition();
-      }
-
-      public void keyReleased( KeyEvent e ) {
-        setPosition();
-      }
-    } );
-    wSQL.addFocusListener( new FocusAdapter() {
-      public void focusGained( FocusEvent e ) {
-        setPosition();
-      }
-
-      public void focusLost( FocusEvent e ) {
-        setPosition();
-      }
-    } );
-    wSQL.addMouseListener( new MouseAdapter() {
-      public void mouseDoubleClick( MouseEvent e ) {
-        setPosition();
-      }
-
-      public void mouseDown( MouseEvent e ) {
-        setPosition();
-      }
-
-      public void mouseUp( MouseEvent e ) {
-        setPosition();
-      }
-    } );
-    wSQL.addModifyListener( lsMod );
-
-    // Text Higlighting
-    wSQL.addLineStyleListener( new SQLValuesHighlight() );
-
     getData();
-    activeSQLFromFile();
 
     BaseStepDialog.setSize( shell );
 
@@ -434,22 +247,6 @@ public class JobEntrySQLDialog extends JobEntryDialog implements JobEntryDialogI
     return jobEntry;
   }
 
-  public void setPosition() {
-
-    String scr = wSQL.getText();
-    int linenr = wSQL.getLineAtOffset( wSQL.getCaretOffset() ) + 1;
-    int posnr = wSQL.getCaretOffset();
-
-    // Go back from position to last CR: how many positions?
-    int colnr = 0;
-    while ( posnr > 0 && scr.charAt( posnr - 1 ) != '\n' && scr.charAt( posnr - 1 ) != '\r' ) {
-      posnr--;
-      colnr++;
-    }
-    wlPosition.setText( BaseMessages.getString( PKG, "JobSQL.Position.Label", "" + linenr, "" + colnr ) );
-
-  }
-
   public void dispose() {
     WindowProperty winprop = new WindowProperty( shell );
     props.setScreen( winprop );
@@ -461,7 +258,6 @@ public class JobEntrySQLDialog extends JobEntryDialog implements JobEntryDialogI
    */
   public void getData() {
     wName.setText( Const.nullToEmpty( jobEntry.getName() ) );
-    wSQL.setText( Const.nullToEmpty( jobEntry.getSQL() ) );
     DatabaseMeta dbinfo = jobEntry.getDatabase();
     if ( dbinfo != null && dbinfo.getName() != null ) {
       wConnection.setText( dbinfo.getName() );
@@ -469,24 +265,30 @@ public class JobEntrySQLDialog extends JobEntryDialog implements JobEntryDialogI
       wConnection.setText( "" );
     }
 
-    wUseSubs.setSelection( jobEntry.getUseVariableSubstitution() );
-    wSQLFromFile.setSelection( jobEntry.getSQLFromFile() );
-    wSendOneStatement.setSelection( jobEntry.isSendOneStatement() );
+    List<JobEntrySQL.SQLScript> scripts = jobEntry.getSqlScripts();
+    if ( scripts != null && scripts.size() > 0 ) {
+      for ( int i = 0; i < scripts.size(); i++ ) {
+        TableItem row = wFields.table.getItem( i );
+        row.setText( 1, scripts.get( i ).getSqlScript() );
+        row.setText( 2, scripts.get( i ).getComments() );
+        if ( scripts.get( i ).isReadFromFile() ) {
+          row.setText( 3, yesNoOptions[0] );
+        } else {
+          row.setText( 3, yesNoOptions[1] );
+        }
+        if ( scripts.get( i ).isUseVariableSubstitution() ) {
+          row.setText( 4, yesNoOptions[0] );
+        } else {
+          row.setText( 4, yesNoOptions[1] );
+        }
+      }
+    }
 
-    wFilename.setText( Const.nullToEmpty( jobEntry.getSQLFilename() ) );
+    wFields.setRowNums();
+    wFields.optWidth( true );
 
     wName.selectAll();
     wName.setFocus();
-  }
-
-  private void activeSQLFromFile() {
-    wlFilename.setEnabled( wSQLFromFile.getSelection() );
-    wFilename.setEnabled( wSQLFromFile.getSelection() );
-    wbFilename.setEnabled( wSQLFromFile.getSelection() );
-    wSQL.setEnabled( !wSQLFromFile.getSelection() );
-    wlSQL.setEnabled( !wSQLFromFile.getSelection() );
-    wlPosition.setEnabled( !wSQLFromFile.getSelection() );
-
   }
 
   private void cancel() {
@@ -504,12 +306,24 @@ public class JobEntrySQLDialog extends JobEntryDialog implements JobEntryDialogI
       return;
     }
     jobEntry.setName( wName.getText() );
-    jobEntry.setSQL( wSQL.getText() );
-    jobEntry.setUseVariableSubstitution( wUseSubs.getSelection() );
-    jobEntry.setSQLFromFile( wSQLFromFile.getSelection() );
-    jobEntry.setSQLFilename( wFilename.getText() );
-    jobEntry.setSendOneStatement( wSendOneStatement.getSelection() );
     jobEntry.setDatabase( jobMeta.findDatabase( wConnection.getText() ) );
+
+    int nrScripts = wFields.nrNonEmpty();
+    List<JobEntrySQL.SQLScript> scripts = new ArrayList<JobEntrySQL.SQLScript>();
+    for ( int i = 0; i < nrScripts; i++ ) {
+      TableItem row = wFields.getNonEmpty( i );
+      String sql = row.getText( 1 );
+      String comment = row.getText( 2 );
+      boolean readFromFile = BaseMessages.getString( PKG, "System.Combo.Yes" ).equalsIgnoreCase( row.getText( 3 ) );
+      boolean varSubstitute = BaseMessages.getString( PKG, "System.Combo.Yes" ).equalsIgnoreCase( row.getText( 4 ) );
+      JobEntrySQL.SQLScript script = new JobEntrySQL.SQLScript();
+      script.setSqlScript( sql );
+      script.setComments( comment );
+      script.setReadFromFile( readFromFile );
+      script.setUseVariableSubstitution( varSubstitute );
+      scripts.add( script );
+    }
+    jobEntry.setSqlScripts( scripts );
     dispose();
   }
 }
