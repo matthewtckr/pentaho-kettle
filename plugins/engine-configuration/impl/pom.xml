@@ -19,7 +19,7 @@
     <dependency.apache-felix-main.version>4.2.1</dependency.apache-felix-main.version>
     <dependency.mockito.version>1.9.5</dependency.mockito.version>
     <dependecy.karaf.version>3.0.3</dependecy.karaf.version>
-    <org.apache.felix.configadmin.version>1.8.8</org.apache.felix.configadmin.version>
+    <org.apache.felix.configadmin.version>1.9.16</org.apache.felix.configadmin.version>
   </properties>
 
   <dependencies>
