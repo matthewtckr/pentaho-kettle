@@ -60,7 +60,7 @@
     <guava.version>17.0</guava.version>
     <slf4j.version>1.7.25</slf4j.version>
     <activemq.version>5.13.1</activemq.version>
-    <paho.version>1.2.0</paho.version>
+    <paho.version>1.2.1</paho.version>
     <powermock.version>1.6.6</powermock.version>
   </properties>
 
