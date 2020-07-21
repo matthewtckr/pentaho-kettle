@@ -34,7 +34,7 @@
     <commons-dbcp.version>1.4</commons-dbcp.version>
     <commons-pool.version>1.5.7</commons-pool.version>
     <commons-compress.version>1.4.1</commons-compress.version>
-    <dom4j.version>1.6.1</dom4j.version>
+    <dom4j.version>1.6.1-atlassian-2</dom4j.version>
     <jetty-util.version>8.1.15.v20140411</jetty-util.version>
     <jug-lgpl.version>2.0.0</jug-lgpl.version>
     <jsch.version>0.1.54</jsch.version>
