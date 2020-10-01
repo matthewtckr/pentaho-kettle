@@ -38,7 +38,7 @@
     <snakeyaml.version>1.7</snakeyaml.version>
 
     <!-- Test dependencies -->
-    <spring.framework.version>3.2.10.RELEASE</spring.framework.version>
+    <spring.framework.version>5.2.9.RELEASE</spring.framework.version>
     <spring.security.version>4.1.3.RELEASE</spring.security.version>
     <spring.webflow.version>2.4.4.RELEASE</spring.webflow.version>
     <se-jcr.version>0.9</se-jcr.version>
