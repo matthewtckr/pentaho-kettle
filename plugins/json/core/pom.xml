@@ -32,7 +32,7 @@
     <maven.build.timestamp.format>yyyy/MM/dd hh:mm</maven.build.timestamp.format>
     <poi.version>3.17</poi.version>
     <dependency.com.tinkerpop.blueprints.version>2.6.0</dependency.com.tinkerpop.blueprints.version>
-    <jackson.version>2.9.4</jackson.version>
+    <jackson.version>2.12.3</jackson.version>
   </properties>
 
   <dependencies>
